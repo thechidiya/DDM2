@@ -14,7 +14,6 @@ class BaseModel():
        
         if self.is_cuda:
             self.device = torch.device("cuda")
-            torch.cuda.set_device(self.config.gpu_device)
         else:
             self.device = torch.device("cpu")
 

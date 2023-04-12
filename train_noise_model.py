@@ -69,6 +69,7 @@ if __name__ == "__main__":
                 current_step += 1
                 if current_step > n_iter:
                     break
+
                 trainer.feed_data(train_data)
                 trainer.optimize_parameters()
                 # log

@@ -1,12 +1,8 @@
-from curses import raw
-from io import BytesIO
-from PIL import Image
 from torch.utils.data import Dataset
-import random
-import os
 import numpy as np
 import torch
-from dipy.io.image import save_nifti, load_nifti
+#from dipy.io.image import save_nifti, load_nifti
+from data.load_data import save_nifty, load_nifty
 from matplotlib import pyplot as plt
 from torchvision import transforms, utils
 
@@ -20,7 +16,7 @@ class MRIDataset(Dataset):
         self.in_channel = in_channel
 
         # read data
-        raw_data, _ = load_nifti(dataroot) # width, height, slices, gradients
+        raw_data = load_nifty(dataroot) # width, height, slices, gradients
         raw_data = np.float32(raw_data)
 
         print('Loaded data of size:', raw_data.shape)
@@ -36,6 +32,8 @@ class MRIDataset(Dataset):
         self.data_size_before_padding = raw_data.shape
 
         self.raw_data = np.pad(raw_data, ((0,0), (0,0), (in_channel//2, in_channel//2), (self.padding, self.padding)), mode='wrap')
+
+        print('(2): Loaded data of size:', raw_data.shape)
 
         # running for Stage3?
         if stage2_file is not None:
@@ -111,13 +109,16 @@ class MRIDataset(Dataset):
             volume_idx = self.val_volume_idx[index]
 
         raw_input = self.raw_data
-       
+        
+        print('(3): Loaded data of size:', raw_input.shape, self.padding)
+
         if self.padding > 0:
             raw_input = np.concatenate((
                                     raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,volume_idx:volume_idx+self.padding],
                                     raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,volume_idx+self.padding+1:volume_idx+2*self.padding+1],
                                     raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,[volume_idx+self.padding]]), axis=-1)
-
+        
+            print(raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,volume_idx:volume_idx+self.padding].shape)
         elif self.padding == 0:
             raw_input = np.concatenate((
                                     raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,[volume_idx+self.padding-1]],
@@ -125,10 +126,14 @@ class MRIDataset(Dataset):
 
         # w, h, c, d = raw_input.shape
         # raw_input = np.reshape(raw_input, (w, h, -1))
+        print('(4): Loaded data of size:', raw_input.shape)
+
         if len(raw_input.shape) == 4:
             raw_input = raw_input[:,:,0]
         raw_input = self.transforms(raw_input) # only support the first channel for now
         # raw_input = raw_input.view(c, d, w, h)
+        
+        print('(5): Loaded data of size:', raw_input.shape)
 
         ret = dict(X=raw_input[[-1], :, :], condition=raw_input[:-1, :, :])
 

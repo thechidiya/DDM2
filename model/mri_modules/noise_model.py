@@ -26,6 +26,7 @@ class N2N(nn.Module):
 
     @torch.no_grad()
     def denoise(self, x_in):
+        
         return self.denoise_fn(x_in['condition'])
 
     def p_losses(self, x_in, noise=None):
@@ -33,6 +34,7 @@ class N2N(nn.Module):
         x_start = x_in['X'] # our
         [b, c, w, h] = x_start.shape
 
+        print(x_start.shape, x_in['condition'].shape)
         x_recon = self.denoise_fn(x_in['condition'])
 
         loss1 = self.mse_loss(x_recon, x_in['X'])
