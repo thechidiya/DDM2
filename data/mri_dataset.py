@@ -19,21 +19,18 @@ class MRIDataset(Dataset):
         raw_data = load_nifty(dataroot) # width, height, slices, gradients
         raw_data = np.float32(raw_data)
 
-        print('Loaded data of size:', raw_data.shape)
         # normalize data
         raw_data = raw_data.astype(np.float32) / np.max(raw_data, axis=(0,1,2), keepdims=True)
 
         # parse mask
         assert type(valid_mask) is (list or tuple) and len(valid_mask) == 2
- 
+
         # mask data
         raw_data = raw_data[:,:,:,valid_mask[0]:valid_mask[1]]
         
         self.data_size_before_padding = raw_data.shape
 
         self.raw_data = np.pad(raw_data, ((0,0), (0,0), (in_channel//2, in_channel//2), (self.padding, self.padding)), mode='wrap')
-
-        print('(2): Loaded data of size:', raw_data.shape)
 
         # running for Stage3?
         if stage2_file is not None:
@@ -110,15 +107,12 @@ class MRIDataset(Dataset):
 
         raw_input = self.raw_data
         
-        print('(3): Loaded data of size:', raw_input.shape, self.padding)
-
         if self.padding > 0:
             raw_input = np.concatenate((
                                     raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,volume_idx:volume_idx+self.padding],
                                     raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,volume_idx+self.padding+1:volume_idx+2*self.padding+1],
                                     raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,[volume_idx+self.padding]]), axis=-1)
         
-            print(raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,volume_idx:volume_idx+self.padding].shape)
         elif self.padding == 0:
             raw_input = np.concatenate((
                                     raw_input[:,:,slice_idx:slice_idx+2*(self.in_channel//2)+1,[volume_idx+self.padding-1]],
@@ -126,15 +120,11 @@ class MRIDataset(Dataset):
 
         # w, h, c, d = raw_input.shape
         # raw_input = np.reshape(raw_input, (w, h, -1))
-        print('(4): Loaded data of size:', raw_input.shape)
-
         if len(raw_input.shape) == 4:
             raw_input = raw_input[:,:,0]
         raw_input = self.transforms(raw_input) # only support the first channel for now
         # raw_input = raw_input.view(c, d, w, h)
         
-        print('(5): Loaded data of size:', raw_input.shape)
-
         ret = dict(X=raw_input[[-1], :, :], condition=raw_input[:-1, :, :])
 
         if self.matched_state is not None:
@@ -170,7 +160,7 @@ if __name__ == "__main__":
     valid_mask = np.zeros(108,)
     valid_mask[18:] += 1
     valid_mask = valid_mask.astype(np.bool8)
-    dataset = MRIDataset('/media/sda5/MRI/qiyuan/forAkshay/mwu100307/diff/mwu100307_diff.nii.gz', valid_mask,
+    dataset = MRIDataset('dataset/test.nii.gz', valid_mask=[0,6],
                          phase='train', val_volume_idx=40, padding=3)#, initial_stage_file='/media/administrator/1305D8BDB8D46DEE/stanford/MRI/experiments/v25_noisemodel/stages.txt')
 
 

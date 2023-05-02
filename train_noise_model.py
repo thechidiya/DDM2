@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # model
     trainer = Model.create_noise_model(opt)
     logger.info('Initial Model Finished')
-
+    
     # Train
     current_step = trainer.begin_step
     current_epoch = trainer.begin_epoch
