@@ -9,7 +9,7 @@ verbose = True
 #https://github.com/bids-standard/bep001/blob/master/src/04-modality-specific-files/01-magnetic-resonance-imaging-data.md
 
 
-def save_nifty(array_np,filename):
+def save_nifty(filename, array_np):
     new_image = ni.Nifti1Image(array_np, affine=np.eye(4))
     t=ni.save(new_image, filename)
     return t

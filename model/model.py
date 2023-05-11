@@ -165,6 +165,7 @@ class DDM2(BaseModel):
             for idx, img in enumerate(self.denoised[-1]):
                 out_dict['interpolated'].append(img.detach().float().cpu())
         else:
+            out_dict['noise_model'] = self.netG.get_noise_model(self.data).float().cpu()
             out_dict['denoised'] = self.denoised.detach().float().cpu()
             out_dict['X'] = self.data['X'].detach().float().cpu()
 

@@ -7,7 +7,8 @@ import core.logger as Logger
 import core.metrics as Metrics
 import os
 import numpy as np
-from dipy.io.image import save_nifti, load_nifti
+from data.load_data import save_nifty, load_nifty
+#from dipy.io.image import save_nifti, load_nifti
 from tqdm import tqdm
 
 
@@ -43,7 +44,7 @@ if __name__ == "__main__":
             
             #### evaluation slice ####
             if args.save:
-                dataset_opt['val_volume_idx'] = 32 # save only the 32th volume
+                dataset_opt['val_volume_idx'] = 'all' # save only the 32th volume
                 dataset_opt['val_slice_idx'] = 'all' #save all slices
             ##########################
 
@@ -69,7 +70,9 @@ if __name__ == "__main__":
 
     if args.save:
         imgs = []
+        denoised_volumes_0 = []
         denoised_volumes = []
+        denoised_imgs_0 = [] # save estimated from noise model
         denoised_imgs = []
 
 
@@ -89,19 +92,30 @@ if __name__ == "__main__":
             Metrics.save_img(
                 input_img[:,:], '{}/{}_{}_input.png'.format(result_path, step, idx))
         else:
+            denoised_img_0 = Metrics.tensor2img(visuals['noise_model'], out_type=np.float32) # w, h, 1 
             denoised_img = Metrics.tensor2img(visuals['denoised'], out_type=np.float32) # w, h, 1 
+            denoised_volumes_0.append(denoised_img_0[...,None,None]) 
             denoised_volumes.append(denoised_img[...,None,None]) 
             if idx % len(val_set.val_slice_idx) == 0:
                 idx = 0
+                denoised_imgs_0.append(np.concatenate(denoised_volumes_0, axis=-2)) # w, h, N, 1
                 denoised_imgs.append(np.concatenate(denoised_volumes, axis=-2)) # w, h, N, 1
+                denoised_volumes_0 = []
                 denoised_volumes = []
 
         print('%d done %d to go!!' % (step, len(val_loader)))
 
     if args.save:
+        #noise model output
+        denoised_imgs_0 = np.concatenate(denoised_imgs_0, axis=-1) # w, h, N*L
+        denoised_imgs_0 = np.clip(denoised_img_0, 0., 1.)
+        denoised_imgs_0 = np.reshape(denoised_imgs_0, (denoised_imgs_0.shape[0], denoised_imgs_0.shape[1], len(val_set.val_slice_idx), len(val_set.val_volume_idx)))
+
+        #denoise images
         denoised_imgs = np.concatenate(denoised_imgs, axis=-1) # w, h, N*L
         denoised_imgs = np.clip(denoised_imgs, 0., 1.)
         denoised_imgs = np.reshape(denoised_imgs, (denoised_imgs.shape[0], denoised_imgs.shape[1], len(val_set.val_slice_idx), len(val_set.val_volume_idx)))
+        
         if args.align_mean:
             raw_normalized = val_set.raw_data.astype(np.float32) - np.min(val_set.raw_data, axis=(0,1), keepdims=True)
             raw_normalized = (raw_normalized.astype(np.float32) / np.max(raw_normalized, axis=(0,1), keepdims=True))
@@ -111,4 +125,5 @@ if __name__ == "__main__":
             denoised_imgs = np.clip(denoised_imgs, 0., 1.)
 
         print('saving size:', denoised_imgs.shape)
-        save_nifti('{}/{}_denoised.nii.gz'.format(result_path, opt['name']), denoised_imgs, affine=np.eye(4))
+        save_nifty('{}/{}_denoised.nii.gz'.format(result_path, 'mri'), denoised_imgs)
+        save_nifty('{}/{}_noise_model.nii.gz'.format(result_path, 'mri'), denoised_imgs_0)

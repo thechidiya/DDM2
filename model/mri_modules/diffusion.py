@@ -107,8 +107,8 @@ class GaussianDiffusion(nn.Module):
             self.ttt_opt = torch.optim.Adam(optim_params, lr=1e-4)
 
         if schedule_opt is not None:
-            self.set_new_noise_schedule(schedule_opt, device=torch.device('cuda:0'))
-            #self.set_new_noise_schedule(schedule_opt, device=torch.device('cpu'))
+            #self.set_new_noise_schedule(schedule_opt, device=torch.device('cuda:0'))
+            self.set_new_noise_schedule(schedule_opt, device=torch.device('cpu'))
 
 
     def set_loss(self, device):
@@ -403,3 +403,11 @@ class GaussianDiffusion(nn.Module):
 
     def forward(self, x, *args, **kwargs):
         return self.p_losses(x, *args, **kwargs)
+    
+    #get noise model estimates 
+    def get_noise_model(self, x_in):
+       # Stage 1 inference
+        with torch.no_grad():
+            x_start = self.denoise_fn(x_in['condition']).detach()
+        
+        return x_start 
