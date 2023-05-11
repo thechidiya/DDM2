@@ -94,6 +94,8 @@ if __name__ == "__main__":
         else:
             denoised_img_0 = Metrics.tensor2img(visuals['noise_model'], out_type=np.float32) # w, h, 1 
             denoised_img = Metrics.tensor2img(visuals['denoised'], out_type=np.float32) # w, h, 1 
+            print(denoised_imgs_0.shape, denoised_img.shape)
+
             denoised_volumes_0.append(denoised_img_0[...,None,None]) 
             denoised_volumes.append(denoised_img[...,None,None]) 
             if idx % len(val_set.val_slice_idx) == 0:
